@@ -17,7 +17,7 @@ var err error
 var globalDB *gorm.DB
 var once sync.Once
 
-// GetOrm :set orm singleton
+// GetOrm :set orm  singleton
 func GetOrm() *gorm.DB {
 	once.Do(func() {
 		user := propkit.Init().Get("db.user")
