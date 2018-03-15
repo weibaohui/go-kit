@@ -7,9 +7,9 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
-	"gitee.com/go-kit/propkit"
-	"gitee.com/go-kit/uikit"
 	"github.com/jinzhu/gorm"
+	"github.com/weibaohui/go-kit/propkit"
+	"github.com/weibaohui/go-kit/uikit"
 )
 
 var err error

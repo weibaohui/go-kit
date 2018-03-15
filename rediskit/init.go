@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/go-redis/redis"
+	"github.com/weibaohui/go-kit/propkit"
 )
 
 var globalRedis *redis.Client

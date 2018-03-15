@@ -19,7 +19,7 @@ func GetPage(c *gin.Context) (*Pagination, error) {
 	//check  pagination exists,use url query  method
 
 	var pager Pagination
-	err := c.MustBindWith(&pager, binding.Query)
+	err := c.MustBindWith(&pager, binding.Form)
 
 	if pager.PageSize == 0 {
 		pager.PageSize = 15
