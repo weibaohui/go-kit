@@ -22,9 +22,13 @@ var c *config
 
 var once sync.Once
 
+// 是否开发模式
+// 由于配合GIN框架
 func IsDevMod() bool {
 	return os.Getenv("GIN_MODE") != "release"
 }
+
+// 初始化config
 func Init() *config {
 
 	once.Do(func() {
@@ -51,7 +55,10 @@ func (c *config) read() {
 		if IsDevMod() {
 			envFileName = "config.dev.json"
 		}
+
+		//环境关联配置文件
 		envConfigPath := fmt.Sprintf("%s%s", c.path, envFileName)
+		//默认配置文件
 		baseConfigPath := fmt.Sprintf("%s%s", c.path, "config.json")
 
 		//没有设置文件名，取默认的config，且按环境变量进行覆盖
@@ -96,6 +103,8 @@ func (c *config) read() {
 	c.content = string(str)
 }
 
+// 使用指定的配置文件
+// 默认是用init中的文件
 func (c *config) Use(fileName string) *config {
 	c.fileName = fileName
 	c.read()

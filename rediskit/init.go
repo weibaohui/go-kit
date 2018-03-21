@@ -53,7 +53,6 @@ func InitWith(ip string, port int, password string) *redisKit {
 			Password: password, // no password set
 			DB:       0,        // use default DB
 		})
-
 		pong, err := globalRedis.Ping().Result()
 		fmt.Println(pong, err)
 		// Output: PONG <nil>
