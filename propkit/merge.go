@@ -11,7 +11,7 @@ var (
 
 // Merge recursively merges the src and dst maps. Key conflicts are resolved by
 // preferring src, or recursively descending, if both src and dst are maps.
-func Merge(dst, src map[string]interface{}) map[string]interface{} {
+func mergeMap(dst, src map[string]interface{}) map[string]interface{} {
 	return merge(dst, src, 0)
 }
 

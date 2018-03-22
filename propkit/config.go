@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/tidwall/gjson"
+	"github.com/weibaohui/go-kit/cronkit"
 )
 
 type config struct {
@@ -30,7 +31,6 @@ func IsDevMod() bool {
 
 // 初始化config
 func Init() *config {
-
 	once.Do(func() {
 		c = &config{}
 		if IsDevMod() {
@@ -38,10 +38,8 @@ func Init() *config {
 		} else {
 			c.path = "./config/"
 		}
-
 		c.read()
 	})
-
 	return c
 }
 func (c *config) check() {
@@ -87,7 +85,7 @@ func (c *config) read() {
 		json.Unmarshal(srcBase, &m1)
 		json.Unmarshal(srcEnv, &m2)
 
-		merged := Merge(m1, m2)
+		merged := mergeMap(m1, m2)
 		finalStr, _ := json.Marshal(merged)
 		c.content = string(finalStr)
 		return
