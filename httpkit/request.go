@@ -34,6 +34,7 @@ package httpkit
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
@@ -473,6 +474,9 @@ func (b *BeegoHTTPRequest) DoRequest() (resp *http.Response, err error) {
 			if t.Dial == nil {
 				t.Dial = TimeoutDialer(b.setting.ConnectTimeout, b.setting.ReadWriteTimeout)
 			}
+			if t.DialContext == nil {
+				t.DialContext = TimeoutDialerContext(b.setting.ConnectTimeout, b.setting.ReadWriteTimeout)
+			}
 		}
 	}
 
@@ -629,6 +633,18 @@ func (b *BeegoHTTPRequest) Response() (*http.Response, error) {
 // TimeoutDialer returns functions of connection dialer with timeout settings for http.Transport Dial field.
 func TimeoutDialer(cTimeout time.Duration, rwTimeout time.Duration) func(net, addr string) (c net.Conn, err error) {
 	return func(netw, addr string) (net.Conn, error) {
+		conn, err := net.DialTimeout(netw, addr, cTimeout)
+		if err != nil {
+			return nil, err
+		}
+		err = conn.SetDeadline(time.Now().Add(rwTimeout))
+		return conn, err
+	}
+}
+
+// TimeoutDialer returns functions of connection dialer with timeout settings for http.Transport Dial field.
+func TimeoutDialerContext(cTimeout time.Duration, rwTimeout time.Duration) func(ctx context.Context, net, addr string) (net.Conn, error) {
+	return func(ctx context.Context, netw, addr string) (net.Conn, error) {
 		conn, err := net.DialTimeout(netw, addr, cTimeout)
 		if err != nil {
 			return nil, err

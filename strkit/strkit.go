@@ -6,12 +6,16 @@ import (
 	"math/rand"
 	"time"
 
+	"crypto/sha1"
 	"github.com/google/uuid"
 )
 
 func IsBlank(str string) bool {
 	return len(str) == 0
 }
+
+const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
 func GetRandomString(length int) string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)
@@ -30,6 +34,21 @@ func GetMd5String(s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+// SHA1 encodes string to SHA1 hex value
+func SHA1(s string) string {
+	h := sha1.New()
+	h.Write([]byte(s))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// ShortSHA1 truncates SHA1 string to at most 10
+func ShortSHA1(sha1 string) string {
+	if len(sha1) > 10 {
+		return sha1[:10]
+	}
+	return sha1
+
+}
 func UUID() string {
 	id, err := uuid.NewRandom()
 	if err != nil {
