@@ -14,7 +14,6 @@ func TestStringToTime(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-
 	t.Log(parse.Equal(toTime))
 	t.Log(toTime)
 }

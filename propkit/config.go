@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/tidwall/gjson"
-	"github.com/weibaohui/go-kit/cronkit"
 )
 
 type config struct {
