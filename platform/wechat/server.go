@@ -15,36 +15,65 @@ import (
 //  appId:        可选; 公众号的AppId, 如果设置了值则安全模式时该Server只能处理 AppId 为该值的公众号的消息(事件);
 //  token:        必须; 公众号用于验证签名的token;
 //  base64AESKey: 可选; aes加密解密key, 43字节长(base64编码, 去掉了尾部的'='), 安全模式必须设置;
+//
+//var (
+//	appID        string
+//	token        string
+//	base64AESKey string
+//	aesKey       []byte
+//)
 
-var (
-	oriId        string
-	appId        string
+type WechatServer struct {
+	appID        string
 	token        string
 	base64AESKey string
 	aesKey       []byte
-)
-
-func init() {
-	oriId, appId = "gh_970c702c7a97", "wx43de43f93421f607"
-	token = "cYl8R3UY8a3i3YPC"
-	base64AESKey = "94xfc6XMlm28fIKTcljBoBCWcMy3aUZkQjqGgh2xyEn"
-
-	if len(base64AESKey) != 43 {
-		errors.New("the length of base64AESKey must equal to 43")
-	}
-	aesKey, _ = base64.StdEncoding.DecodeString(base64AESKey + "=")
-
 }
 
-func Start() {
-	http.HandleFunc("/", ServeHTTP)
+//
+//func init() {
+//	appID = "wx43de43f93421f607"
+//	token = "cYl8R3UY8a3i3YPC"
+//	base64AESKey = "94xfc6XMlm28fIKTcljBoBCWcMy3aUZkQjqGgh2xyEn"
+//
+//	if len(base64AESKey) != 43 {
+//		errors.New("the length of base64AESKey must equal to 43")
+//	}
+//	aesKey, _ = base64.StdEncoding.DecodeString(base64AESKey + "=")
+//}
+
+func NewServer() *WechatServer {
+	return &WechatServer{}
+}
+func (s *WechatServer) SetAppID(appID string) *WechatServer {
+	s.appID = appID
+	return s
+}
+
+func (s *WechatServer) SetToken(token string) *WechatServer {
+	s.token = token
+	return s
+}
+
+func (s *WechatServer) SetBase64AESKey(key string) *WechatServer {
+	s.base64AESKey = key
+
+	if len(s.base64AESKey) != 43 {
+		errors.New("the length of base64AESKey must equal to 43")
+	}
+	aesKey, _ := base64.StdEncoding.DecodeString(s.base64AESKey + "=")
+	s.aesKey = aesKey
+	return s
+}
+func (s *WechatServer) Start() {
+	http.HandleFunc("/", s.ServeHTTP)
 
 	http.ListenAndServe(":9011", nil)
 }
 
-func ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *WechatServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Printf("%v\n", r.URL.Query())
+	//fmt.Printf("%v\n", r.URL.Query())
 
 	query := r.URL.Query()
 	errorHandler := DefaultErrorHandler
@@ -54,142 +83,150 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		switch encryptType := query.Get("encrypt_type"); encryptType {
 		case "aes":
 
-			haveMsgSignature := query.Get("msg_signature")
-			if haveMsgSignature == "" {
-				errorHandler.ServeError(w, r, errors.New("not found msg_signature query parameter"))
-				return
-			}
-			timestampString := query.Get("timestamp")
-			if timestampString == "" {
-				errorHandler.ServeError(w, r, errors.New("not found timestamp query parameter"))
-				return
-			}
-			//timestamp, err := strconv.ParseInt(timestampString, 10, 64)
-			//if err != nil {
-			//	err = fmt.Errorf("can not parse timestamp query parameter %q to int64", timestampString)
-			//	errorHandler.ServeError(w, r, err)
-			//	return
-			//}
-			//fmt.Println("timestamp", timestamp)
-			nonce := query.Get("nonce")
-			if nonce == "" {
-				errorHandler.ServeError(w, r, errors.New("not found nonce query parameter"))
-				return
-			}
-
-			buffer := textBufferPool.Get().(*bytes.Buffer)
-			buffer.Reset()
-			defer textBufferPool.Put(buffer)
-
-			if _, err := buffer.ReadFrom(r.Body); err != nil {
-				errorHandler.ServeError(w, r, err)
-				return
-			}
-			requestBodyBytes := buffer.Bytes()
-			//收到的body就是base64加密的
-			//errorHandler.ServeError(w, r, errors.New("Base64EncryptedMsg        "+string(requestBodyBytes)))
-
-			wantMsgSignature := MsgSign(token, timestampString, nonce, string(requestBodyBytes))
-			if haveMsgSignature != wantMsgSignature {
-				err := fmt.Errorf("check msg_signature failed, have: %s, want: %s", haveMsgSignature, wantMsgSignature)
-				errorHandler.ServeError(w, r, err)
-				return
-			}
-
-			encryptedMsg := make([]byte, base64.StdEncoding.DecodedLen(len(requestBodyBytes)))
-			encryptedMsgLen, err := base64.StdEncoding.Decode(encryptedMsg, []byte(requestBodyBytes))
+			_, msg, err := s.MsgAESEncrypt(r)
 			if err != nil {
 				errorHandler.ServeError(w, r, err)
 				return
 			}
-			encryptedMsg = encryptedMsg[:encryptedMsgLen]
-
-			random, msgPlaintext, haveAppIdBytes, err := AESDecryptMsg(encryptedMsg, aesKey)
-			fmt.Println("xxx---start")
-			fmt.Println(string(random))
-			fmt.Println(string(msgPlaintext))
-			fmt.Println(string(haveAppIdBytes))
-			fmt.Println(err)
-			fmt.Println("xxx---end")
-			//fmt.Fprint(w,string(msgPlaintext))
+			//fmt.Println("xxx---start")
+			//fmt.Println(appID)
+			//fmt.Println(msg)
+			//fmt.Println("xxx---end")
+			fmt.Fprint(w, msg)
 
 		case "", "raw":
-			haveSignature := query.Get("signature")
-			if haveSignature == "" {
-				errorHandler.ServeError(w, r, errors.New("not found signature query parameter"))
-				return
-			}
-			timestampString := query.Get("timestamp")
-			if timestampString == "" {
-				errorHandler.ServeError(w, r, errors.New("not found timestamp query parameter"))
-				return
-			}
-			timestamp, err := strconv.ParseInt(timestampString, 10, 64)
-			if err != nil {
-				err = fmt.Errorf("can not parse timestamp query parameter %q to int64", timestampString)
-				errorHandler.ServeError(w, r, err)
-				return
-			}
-			fmt.Println("timestamp", timestamp)
-			nonce := query.Get("nonce")
-			if nonce == "" {
-				errorHandler.ServeError(w, r, errors.New("not found nonce query parameter"))
-				return
-			}
-
-			wantSignature := Sign(token, timestampString, nonce)
-			if haveSignature != wantSignature {
-				err = fmt.Errorf("check signature failed, have: %s, want: %s", haveSignature, wantSignature)
-				errorHandler.ServeError(w, r, err)
-				return
-
-			}
-
-			msgPlaintext, err := ioutil.ReadAll(r.Body)
+			s, err := s.MsgNoEncrypt(r)
 			if err != nil {
 				errorHandler.ServeError(w, r, err)
 				return
 			}
-			fmt.Printf("原始内容：%v", string(msgPlaintext))
+			fmt.Fprint(w, s)
 		default:
 
 			errorHandler.ServeError(w, r, errors.New("unknown encrypt_type: "+encryptType))
 		}
 	case "GET": // 验证回调URL是否有效
-		haveSignature := query.Get("signature")
-		if haveSignature == "" {
-			errorHandler.ServeError(w, r, errors.New("not found signature query parameter"))
-			return
-		}
-		timestamp := query.Get("timestamp")
-		if timestamp == "" {
-			errorHandler.ServeError(w, r, errors.New("not found timestamp query parameter"))
-			return
-		}
-		nonce := query.Get("nonce")
-		if nonce == "" {
-			errorHandler.ServeError(w, r, errors.New("not found nonce query parameter"))
-			return
-		}
-		echostr := query.Get("echostr")
-		if echostr == "" {
-			errorHandler.ServeError(w, r, errors.New("not found echostr query parameter"))
-			return
-		}
-
-		wantSignature := Sign(token, timestamp, nonce)
-		if haveSignature != wantSignature {
-			err := fmt.Errorf("check signature failed, have: %s, want: %s", haveSignature, wantSignature)
+		s, err := s.EchoStr(r)
+		if err != nil {
 			errorHandler.ServeError(w, r, err)
 			return
-
 		}
-		io.WriteString(w, echostr)
+		io.WriteString(w, s)
 	}
 }
 
-// =====================================================================================================================
+// 验证回调URL是否有效
+func (s *WechatServer) EchoStr(r *http.Request) (string, error) {
+	query := r.URL.Query()
 
-type cipherRequestHttpBody struct {
-	Base64EncryptedMsg string `json:"Data"`
+	haveSignature := query.Get("signature")
+	if haveSignature == "" {
+		return "", errors.New("not found signature query parameter")
+	}
+	timestamp := query.Get("timestamp")
+	if timestamp == "" {
+		return "", errors.New("not found timestamp query parameter")
+	}
+	nonce := query.Get("nonce")
+	if nonce == "" {
+		return "", errors.New("not found nonce query parameter")
+	}
+	echoStr := query.Get("echoStr")
+	if echoStr == "" {
+		return "", errors.New("not found echoStr query parameter")
+	}
+
+	wantSignature := Sign(s.token, timestamp, nonce)
+	if haveSignature != wantSignature {
+		err := fmt.Errorf("check signature failed, have: %s, want: %s", haveSignature, wantSignature)
+		return "", err
+
+	}
+	return echoStr, nil
+}
+
+// 明文方式获取原文
+func (s *WechatServer) MsgNoEncrypt(r *http.Request) (string, error) {
+	query := r.URL.Query()
+	haveSignature := query.Get("signature")
+	if haveSignature == "" {
+		return "", errors.New("not found signature query parameter")
+	}
+	timestampString := query.Get("timestamp")
+	if timestampString == "" {
+		return "", errors.New("not found timestamp query parameter")
+	}
+	_, err := strconv.ParseInt(timestampString, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("can not parse timestamp query parameter %q to int64", timestampString)
+		return "", err
+	}
+
+	nonce := query.Get("nonce")
+	if nonce == "" {
+		return "", errors.New("not found nonce query parameter")
+	}
+
+	wantSignature := Sign(s.token, timestampString, nonce)
+	if haveSignature != wantSignature {
+		err = fmt.Errorf("check signature failed, have: %s, want: %s", haveSignature, wantSignature)
+		return "", err
+
+	}
+
+	msgPlaintext, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(msgPlaintext), nil
+}
+
+// AES方式解密出原文
+// 返回 appID,msg,error
+func (s *WechatServer) MsgAESEncrypt(r *http.Request) (string, string, error) {
+	query := r.URL.Query()
+	haveMsgSignature := query.Get("msg_signature")
+	if haveMsgSignature == "" {
+		return "", "", errors.New("not found msg_signature query parameter")
+	}
+	timestampString := query.Get("timestamp")
+	if timestampString == "" {
+		return "", "", errors.New("not found timestamp query parameter")
+	}
+	_, err := strconv.ParseInt(timestampString, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("can not parse timestamp query parameter %q to int64", timestampString)
+		return "", "", err
+	}
+	nonce := query.Get("nonce")
+	if nonce == "" {
+		return "", "", errors.New("not found nonce query parameter")
+	}
+
+	buffer := textBufferPool.Get().(*bytes.Buffer)
+	buffer.Reset()
+	defer textBufferPool.Put(buffer)
+
+	if _, err := buffer.ReadFrom(r.Body); err != nil {
+		return "", "", err
+	}
+	requestBodyBytes := buffer.Bytes()
+	//收到的body就是base64加密的
+	//errorHandler.ServeError(w, r, errors.New("Base64EncryptedMsg        "+string(requestBodyBytes)))
+
+	wantMsgSignature := MsgSign(s.token, timestampString, nonce, string(requestBodyBytes))
+	if haveMsgSignature != wantMsgSignature {
+		err := fmt.Errorf("check msg_signature failed, have: %s, want: %s", haveMsgSignature, wantMsgSignature)
+		return "", "", err
+	}
+
+	encryptedMsg := make([]byte, base64.StdEncoding.DecodedLen(len(requestBodyBytes)))
+	encryptedMsgLen, err := base64.StdEncoding.Decode(encryptedMsg, []byte(requestBodyBytes))
+	if err != nil {
+		return "", "", err
+	}
+	encryptedMsg = encryptedMsg[:encryptedMsgLen]
+
+	_, msgPlaintext, haveAppIdBytes, err := AESDecryptMsg(encryptedMsg, s.aesKey)
+	return string(haveAppIdBytes), string(msgPlaintext), nil
 }
