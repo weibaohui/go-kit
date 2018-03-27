@@ -23,7 +23,7 @@ import (
 //	aesKey       []byte
 //)
 
-type WechatServer struct {
+type Server struct {
 	appID        string
 	token        string
 	base64AESKey string
@@ -42,20 +42,20 @@ type WechatServer struct {
 //	aesKey, _ = base64.StdEncoding.DecodeString(base64AESKey + "=")
 //}
 
-func NewServer() *WechatServer {
-	return &WechatServer{}
+func NewServer() *Server {
+	return &Server{}
 }
-func (s *WechatServer) SetAppID(appID string) *WechatServer {
+func (s *Server) SetAppID(appID string) *Server {
 	s.appID = appID
 	return s
 }
 
-func (s *WechatServer) SetToken(token string) *WechatServer {
+func (s *Server) SetToken(token string) *Server {
 	s.token = token
 	return s
 }
 
-func (s *WechatServer) SetBase64AESKey(key string) *WechatServer {
+func (s *Server) SetBase64AESKey(key string) *Server {
 	s.base64AESKey = key
 
 	if len(s.base64AESKey) != 43 {
@@ -65,13 +65,13 @@ func (s *WechatServer) SetBase64AESKey(key string) *WechatServer {
 	s.aesKey = aesKey
 	return s
 }
-func (s *WechatServer) Start() {
+func (s *Server) Start() {
 	http.HandleFunc("/", s.ServeHTTP)
 
 	http.ListenAndServe(":9011", nil)
 }
 
-func (s *WechatServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//fmt.Printf("%v\n", r.URL.Query())
 
@@ -116,7 +116,7 @@ func (s *WechatServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // 验证回调URL是否有效
-func (s *WechatServer) EchoStr(r *http.Request) (string, error) {
+func (s *Server) EchoStr(r *http.Request) (string, error) {
 	query := r.URL.Query()
 
 	haveSignature := query.Get("signature")
@@ -146,7 +146,7 @@ func (s *WechatServer) EchoStr(r *http.Request) (string, error) {
 }
 
 // 明文方式获取原文
-func (s *WechatServer) MsgNoEncrypt(r *http.Request) (string, error) {
+func (s *Server) MsgNoEncrypt(r *http.Request) (string, error) {
 	query := r.URL.Query()
 	haveSignature := query.Get("signature")
 	if haveSignature == "" {
@@ -183,7 +183,7 @@ func (s *WechatServer) MsgNoEncrypt(r *http.Request) (string, error) {
 
 // AES方式解密出原文
 // 返回 appID,msg,error
-func (s *WechatServer) MsgAESEncrypt(r *http.Request) (string, string, error) {
+func (s *Server) MsgAESEncrypt(r *http.Request) (string, string, error) {
 	query := r.URL.Query()
 	haveMsgSignature := query.Get("msg_signature")
 	if haveMsgSignature == "" {
