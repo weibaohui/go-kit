@@ -71,6 +71,7 @@ func (s *Server) Start() {
 	http.ListenAndServe(":9011", nil)
 }
 
+// ServeHTTP 例子
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//fmt.Printf("%v\n", r.URL.Query())
