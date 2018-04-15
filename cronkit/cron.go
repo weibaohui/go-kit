@@ -93,28 +93,28 @@ type Tasker interface {
 }
 
 // task error
-type taskerr struct {
+type taskErr struct {
 	t       time.Time
-	errinfo string
+	errInfo string
 }
 
 // Task task struct
 type Task struct {
-	Taskname string
+	TaskName string
 	Spec     *Schedule
 	SpecStr  string
 	DoFunc   TaskFunc
 	Prev     time.Time
 	Next     time.Time
-	Errlist  []*taskerr // like errtime:errinfo
-	ErrLimit int        // max length for the errlist, 0 stand for no limit
+	ErrList  []*taskErr // like errTime:errInfo
+	ErrLimit int        // max length for the errList, 0 stand for no limit
 }
 
 // NewTask add new task with name, time and func
-func NewTask(tname string, spec string, f TaskFunc) *Task {
+func NewTask(name string, spec string, f TaskFunc) *Task {
 
 	task := &Task{
-		Taskname: tname,
+		TaskName: name,
 		DoFunc:   f,
 		ErrLimit: 100,
 		SpecStr:  spec,
@@ -131,8 +131,8 @@ func (t *Task) GetSpec() string {
 // GetStatus get current task status
 func (t *Task) GetStatus() string {
 	var str string
-	for _, v := range t.Errlist {
-		str += v.t.String() + ":" + v.errinfo + "<br>"
+	for _, v := range t.ErrList {
+		str += v.t.String() + ":" + v.errInfo + "<br>"
 	}
 	return str
 }
@@ -141,8 +141,8 @@ func (t *Task) GetStatus() string {
 func (t *Task) Run() error {
 	err := t.DoFunc()
 	if err != nil {
-		if t.ErrLimit > 0 && t.ErrLimit > len(t.Errlist) {
-			t.Errlist = append(t.Errlist, &taskerr{t: t.Next, errinfo: err.Error()})
+		if t.ErrLimit > 0 && t.ErrLimit > len(t.ErrList) {
+			t.ErrList = append(t.ErrList, &taskErr{t: t.Next, errInfo: err.Error()})
 		}
 	}
 	return err
