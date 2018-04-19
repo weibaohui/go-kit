@@ -10,6 +10,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/weibaohui/go-kit/propkit"
 	"github.com/weibaohui/go-kit/uikit"
+	"strings"
 )
 
 var err error
@@ -25,10 +26,16 @@ func GetOrm() *gorm.DB {
 		host := propkit.Init().Get("db.host")
 		port := propkit.Init().GetInt64("db.port")
 		name := propkit.Init().Get("db.name")
-		url := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+		param := propkit.Init().Get("db.param")
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
 			user, password, host, port, name)
-		fmt.Println(url)
-		globalDB, err = gorm.Open("mysql", url)
+		if len(param) > 0 {
+			param = strings.Replace(param, "/", "%2F", -1)
+			dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",
+				user, password, host, port, name, param)
+		}
+		fmt.Println(dsn)
+		globalDB, err = gorm.Open("mysql", dsn)
 		if err != nil {
 			log.Fatalf("connect to db err: %s", err.Error())
 		}
