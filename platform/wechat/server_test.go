@@ -26,9 +26,9 @@ func TestServeHTTP(t *testing.T) {
 	s := server()
 
 	random := []byte("123456")
-	encryptedMsg := AESEncryptMsg(random, []byte(msg), s.appID, s.aesKey)
+	encryptedMsg := AESEncryptMsg(random, []byte(msg), s.AppID, s.AESKey)
 	base64EncryptedMsg := base64.StdEncoding.EncodeToString(encryptedMsg)
-	msgSignature := MsgSign(s.token, timestamp, nonce, base64EncryptedMsg)
+	msgSignature := MsgSign(s.Token, timestamp, nonce, base64EncryptedMsg)
 	///?signature=%s&timestamp=%s&nonce=%s&openid=%s&encrypt_type=aes&msg_signature=%s
 	query := fmt.Sprintf(""+
 		"/"+
@@ -65,9 +65,9 @@ func BenchmarkWechatServer_ServeHTTP(b *testing.B) {
 	s := server()
 
 	random := []byte("123456")
-	encryptedMsg := AESEncryptMsg(random, []byte(msg), s.appID, s.aesKey)
+	encryptedMsg := AESEncryptMsg(random, []byte(msg), s.AppID, s.AESKey)
 	base64EncryptedMsg := base64.StdEncoding.EncodeToString(encryptedMsg)
-	msgSignature := MsgSign(s.token, timestamp, nonce, base64EncryptedMsg)
+	msgSignature := MsgSign(s.Token, timestamp, nonce, base64EncryptedMsg)
 	///?signature=%s&timestamp=%s&nonce=%s&openid=%s&encrypt_type=aes&msg_signature=%s
 	query := fmt.Sprintf(""+
 		"/"+
@@ -103,21 +103,20 @@ func TestServeHTTPReal(t *testing.T) {
 	s := server()
 
 	random := []byte("123456")
-	encryptedMsg := AESEncryptMsg(random, []byte(msg), s.appID, s.aesKey)
+	encryptedMsg := AESEncryptMsg(random, []byte(msg), s.AppID, s.AESKey)
 	base64EncryptedMsg := base64.StdEncoding.EncodeToString(encryptedMsg)
-	msgSignature := MsgSign(s.token, timestamp, nonce, base64EncryptedMsg)
+	msgSignature := MsgSign(s.Token, timestamp, nonce, base64EncryptedMsg)
 	///?signature=%s&timestamp=%s&nonce=%s&openid=%s&encrypt_type=aes&msg_signature=%s
 	query := fmt.Sprintf(""+
-
 		"?appID=%s"+
 		"&timestamp=%s"+
 		"&nonce=%s"+
 		"&encrypt_type=aes"+
 		"&msg_signature=%s",
-		s.appID, timestamp, nonce, msgSignature)
+		s.AppID, timestamp, nonce, msgSignature)
 	t.Log(query)
 
-	finalUrl := "http://127.0.0.1:8089/v1/long" + query
+	finalUrl := "http://127.0.0.1:8098/v1/long" + query
 	t.Logf("final url: %s", finalUrl)
 
 	str, err := httpkit.NewRequest(finalUrl, "POST").Body(base64EncryptedMsg).
@@ -128,7 +127,44 @@ func TestServeHTTPReal(t *testing.T) {
 	t.Log(str)
 	except := `{"appID":"wx43de43f93421f607","msg":"helloworld","x":"x"}`
 	if str != except {
-		t.Fatalf("except %s,got %s", msg, str)
+		t.Fatalf("except %s,got %s", except, str)
+	}
+
+}
+
+func TestServeHTTPReal2(t *testing.T) {
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	nonce := strkit.GetRandomString(10)
+	msg := "helloworld"
+
+	s := server()
+
+	random := []byte("123456")
+	encryptedMsg := AESEncryptMsg(random, []byte(msg), s.AppID, s.AESKey)
+	base64EncryptedMsg := base64.StdEncoding.EncodeToString(encryptedMsg)
+	msgSignature := MsgSign(s.Token, timestamp, nonce, base64EncryptedMsg)
+	///?signature=%s&timestamp=%s&nonce=%s&openid=%s&encrypt_type=aes&msg_signature=%s
+	query := fmt.Sprintf(""+
+		"?appID=%s"+
+		"&timestamp=%s"+
+		"&nonce=%s"+
+		"&encrypt_type=aes"+
+		"&msg_signature=%s",
+		s.AppID, timestamp, nonce, msgSignature)
+	t.Log(query)
+
+	finalUrl := "http://127.0.0.1:9011/" + query
+	t.Logf("final url: %s", finalUrl)
+
+	str, err := httpkit.NewRequest(finalUrl, "POST").Body(base64EncryptedMsg).
+		String()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(str)
+	except := `helloworld`
+	if str != except {
+		t.Fatalf("except %s,got %s", except, str)
 	}
 
 }

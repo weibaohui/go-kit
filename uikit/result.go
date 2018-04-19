@@ -4,21 +4,21 @@ import (
 	"net/http"
 )
 
-//R return struct
+// R return struct
 type R struct {
 	Code int                    `json:"code"`
 	Msg  string                 `json:"msg"`
 	Data map[string]interface{} `json:"data"`
 }
 
-//NewResult make new Result
+// NewResult make new Result
 func NewResult() *R {
 	return &R{
 		Data: make(map[string]interface{}, 0),
 	}
 }
 
-//Err make normal error result
+// Err make normal error result
 func (r *R) Err(err error) *R {
 	r.Code = http.StatusBadRequest
 
@@ -28,21 +28,21 @@ func (r *R) Err(err error) *R {
 	return r
 }
 
-//ErrMsg  make normal error result
+// ErrMsg  make normal error result
 func (r *R) ErrMsg(msg string) *R {
 	r.Code = http.StatusBadRequest
 	r.Msg = msg
 	return r
 }
 
-//ErrCodeMsg set user define error msg
+// ErrCodeMsg set user define error msg
 func (r *R) ErrCodeMsg(httpStatusCode int, msg string) *R {
 	r.Code = httpStatusCode
 	r.Msg = msg
 	return r
 }
 
-//Ok init result
+// Ok init result
 func (r *R) Ok(msg ...string) *R {
 	r.Code = http.StatusOK
 	r.Msg = ""
@@ -53,13 +53,13 @@ func (r *R) Ok(msg ...string) *R {
 	return r
 }
 
-//Put use map[string]interface{} to store result data
+// Put use map[string]interface{} to store result data
 func (r *R) Put(key string, data interface{}) *R {
 	r.Data[key] = data
 	return r
 }
 
-//SetPage add pagination info to result
+// SetPage add pagination info to result
 func (r *R) SetPage(page *Pagination) *R {
 	if page == nil {
 		return r
@@ -68,7 +68,7 @@ func (r *R) SetPage(page *Pagination) *R {
 	return r
 }
 
-//Reset reset
+// Reset reset
 func (r *R) Reset() *R {
 	r.Code = 0
 	r.Msg = ""

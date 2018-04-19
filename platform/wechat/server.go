@@ -24,10 +24,10 @@ import (
 //)
 
 type Server struct {
-	appID        string
-	token        string
+	AppID        string
+	Token        string
 	base64AESKey string
-	aesKey       []byte
+	AESKey       []byte
 }
 
 //
@@ -46,12 +46,12 @@ func NewServer() *Server {
 	return &Server{}
 }
 func (s *Server) SetAppID(appID string) *Server {
-	s.appID = appID
+	s.AppID = appID
 	return s
 }
 
 func (s *Server) SetToken(token string) *Server {
-	s.token = token
+	s.Token = token
 	return s
 }
 
@@ -62,9 +62,10 @@ func (s *Server) SetBase64AESKey(key string) *Server {
 		errors.New("the length of base64AESKey must equal to 43")
 	}
 	aesKey, _ := base64.StdEncoding.DecodeString(s.base64AESKey + "=")
-	s.aesKey = aesKey
+	s.AESKey = aesKey
 	return s
 }
+
 func (s *Server) Start() {
 	http.HandleFunc("/", s.ServeHTTP)
 
@@ -137,7 +138,7 @@ func (s *Server) EchoStr(r *http.Request) (string, error) {
 		return "", errors.New("not found echoStr query parameter")
 	}
 
-	wantSignature := Sign(s.token, timestamp, nonce)
+	wantSignature := Sign(s.Token, timestamp, nonce)
 	if haveSignature != wantSignature {
 		err := fmt.Errorf("check signature failed, have: %s, want: %s", haveSignature, wantSignature)
 		return "", err
@@ -168,7 +169,7 @@ func (s *Server) MsgNoEncrypt(r *http.Request) (string, error) {
 		return "", errors.New("not found nonce query parameter")
 	}
 
-	wantSignature := Sign(s.token, timestampString, nonce)
+	wantSignature := Sign(s.Token, timestampString, nonce)
 	if haveSignature != wantSignature {
 		err = fmt.Errorf("check signature failed, have: %s, want: %s", haveSignature, wantSignature)
 		return "", err
@@ -212,10 +213,11 @@ func (s *Server) MsgAESEncrypt(r *http.Request) (string, string, error) {
 		return "", "", err
 	}
 	requestBodyBytes := buffer.Bytes()
+	fmt.Errorf("%s\n", string(requestBodyBytes))
 	//收到的body就是base64加密的
 	//errorHandler.ServeError(w, r, errors.New("Base64EncryptedMsg        "+string(requestBodyBytes)))
 
-	wantMsgSignature := MsgSign(s.token, timestampString, nonce, string(requestBodyBytes))
+	wantMsgSignature := MsgSign(s.Token, timestampString, nonce, string(requestBodyBytes))
 	if haveMsgSignature != wantMsgSignature {
 		err := fmt.Errorf("check msg_signature failed, have: %s, want: %s", haveMsgSignature, wantMsgSignature)
 		return "", "", err
@@ -228,6 +230,6 @@ func (s *Server) MsgAESEncrypt(r *http.Request) (string, string, error) {
 	}
 	encryptedMsg = encryptedMsg[:encryptedMsgLen]
 
-	_, msgPlaintext, haveAppIdBytes, err := AESDecryptMsg(encryptedMsg, s.aesKey)
+	_, msgPlaintext, haveAppIdBytes, err := AESDecryptMsg(encryptedMsg, s.AESKey)
 	return string(haveAppIdBytes), string(msgPlaintext), nil
 }
