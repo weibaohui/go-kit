@@ -59,3 +59,29 @@ func SetPageLimitAndCount(sql *gorm.DB, page ...*uikit.Pagination) *gorm.DB {
 	}
 	return sql
 }
+func initOrm(user, password, host, port, name, param string) *gorm.DB {
+	once.Do(func() {
+
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+			user, password, host, port, name)
+		if len(param) > 0 {
+			param = strings.Replace(param, "/", "%2F", -1)
+			dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",
+				user, password, host, port, name, param)
+		}
+		fmt.Println(dsn)
+		globalDB, err = gorm.Open("mysql", dsn)
+		if err != nil {
+			log.Fatalf("connect to db err: %s", err.Error())
+		}
+		globalDB.DB().SetMaxOpenConns(15)
+		globalDB.DB().SetMaxIdleConns(15)
+		if propkit.IsDevMod() {
+			globalDB.LogMode(true)
+		} else {
+			globalDB.LogMode(false)
+		}
+		fmt.Println("db 定制 初始化")
+	})
+	return globalDB
+}
