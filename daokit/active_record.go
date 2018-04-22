@@ -155,6 +155,14 @@ func (e *Entity) Parse(obj interface{}, toUnderLine bool) *Entity {
 	t := reflect.TypeOf(obj).Elem()
 	v := reflect.ValueOf(obj).Elem()
 
+	// 根据结构体名称自动设置表名
+	if e.tableName == "" && t.Name() != "" {
+		e.tableName = t.Name()
+		if toUnderLine {
+			e.tableName = strkit.ToUnderLine(t.Name())
+		}
+	}
+
 	for i := 0; i < t.NumField(); i++ {
 		value := v.Field(i).Interface()
 		field := t.Field(i).Name

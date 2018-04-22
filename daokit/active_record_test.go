@@ -58,16 +58,19 @@ func TestEntity_Insert3(t *testing.T) {
 	db := initOrm("root", "root", "127.0.0.1", "4000", "todo", "")
 	New().SetDB(db).SetTableName("domain").Parse(&ss, true).Remove("token").Insert()
 }
+
+type Domain struct {
+	PageURL   string
+	DomainDNS string
+	AppID     string
+	Token     string
+}
+
 func TestEntity_Update2(t *testing.T) {
-	ss := struct {
-		PageURL   string
-		DomainDNS string
-		AppID     string
-		Token     string
-	}{PageURL: "www.baidu.com", DomainDNS: "8.8.8.8", AppID: "baidu", Token: ""}
+	ss := Domain{PageURL: "www.baidu.com", DomainDNS: "8.8.8.8", AppID: "baidu", Token: ""}
 	db := initOrm("root", "root", "127.0.0.1", "4000", "todo", "")
 	where := New().Set("app_id", "xyz")
-	New().SetDB(db).SetTableName("domain").Parse(&ss, true).Remove("token").Update(where)
+	New().SetDB(db).Parse(&ss, true).Remove("token").Update(where)
 }
 
 func TestEntity_Update(t *testing.T) {
