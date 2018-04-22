@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"crypto/sha1"
-	"github.com/google/uuid"
 )
 
 func IsBlank(str string) bool {
@@ -58,13 +57,7 @@ func ShortSHA1(sha1 string) string {
 	return sha1
 
 }
-func UUID() string {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		return RandomString(32)
-	}
-	return id.String()
-}
+
 func Substr(s string, pos, length int) string {
 	runes := []rune(s)
 	l := pos + length
