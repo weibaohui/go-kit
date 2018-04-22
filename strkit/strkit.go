@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"crypto/sha1"
+	"strings"
 )
 
 func IsBlank(str string) bool {
@@ -65,4 +66,25 @@ func Substr(s string, pos, length int) string {
 		l = len(runes)
 	}
 	return string(runes[pos:l])
+}
+
+func ToUnderLine(s string) string {
+
+	data := make([]byte, 0, len(s)*2)
+	num := len(s)
+	lastIsUpper := true
+	for i := 0; i < num; i++ {
+		d := s[i]
+		if d >= 'A' && d <= 'Z' {
+			if !lastIsUpper {
+				data = append(data, '_')
+				lastIsUpper = true
+			}
+		} else {
+			lastIsUpper = false
+		}
+
+		data = append(data, d)
+	}
+	return strings.ToLower(string(data[:]))
 }

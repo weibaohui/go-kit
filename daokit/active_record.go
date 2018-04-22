@@ -3,6 +3,8 @@ package daokit
 import (
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"github.com/weibaohui/go-kit/strkit"
+	"reflect"
 	"strings"
 )
 
@@ -39,7 +41,10 @@ func (e *Entity) Set(key string, val interface{}) *Entity {
 	e.data[key] = val
 	return e
 }
-
+func (e *Entity) Remove(key string) *Entity {
+	delete(e.data, key)
+	return e
+}
 func (e *Entity) QueryOne(m interface{}, sql string, args ...interface{}) error {
 	e.initDB()
 	rows, err := e.db.Raw(sql).Rows()
@@ -138,4 +143,25 @@ func (e *Entity) Exec(sql string, args ...interface{}) (int64, error) {
 	e.initDB()
 	db := e.db.Exec(sql, args...)
 	return db.RowsAffected, db.Error
+}
+
+// Parse 将实体转换为Entity的data
+// param ignoreNull 是否忽略空值
+// param toUnderLine 是否将字段名称转换为下划线方式
+func (e *Entity) Parse(obj interface{}, toUnderLine bool) *Entity {
+	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
+		panic("obj 必须为 指针")
+	}
+	t := reflect.TypeOf(obj).Elem()
+	v := reflect.ValueOf(obj).Elem()
+
+	for i := 0; i < t.NumField(); i++ {
+		value := v.Field(i).Interface()
+		field := t.Field(i).Name
+		if toUnderLine {
+			field = strkit.ToUnderLine(field)
+		}
+		e.data[field] = value
+	}
+	return e
 }
