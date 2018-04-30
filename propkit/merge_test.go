@@ -67,7 +67,7 @@ func TestMerge(t *testing.T) {
 			continue
 		}
 
-		got := Merge(dst, src)
+		got := mergeMap(dst, src)
 		assert(t, expected, got)
 	}
 }
