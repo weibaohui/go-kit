@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/tidwall/gjson"
+	"github.com/weibaohui/go-kit/filekit"
 )
 
 type config struct {
@@ -29,16 +30,23 @@ func IsDevMod() bool {
 }
 
 // 初始化config
+// 首先查看可执行文件所在目录下的./config/文件夹
+// 若无，查看./src/config/文件夹
 func Init() *config {
-	once.Do(func() {
+	i := func() {
 		c = &config{}
-		if IsDevMod() {
-			c.path = "./src/config/"
+		dir, _ := os.Getwd()
+		b, _ := filekit.PathExists(dir + "/config/")
+		if b {
+			fmt.Println("配置可执行文件所在目录下config文件夹")
+			c.path = dir + "/config/"
 		} else {
-			c.path = "./config/"
+			fmt.Println("配置可执行文件所在目录下src/config文件夹")
+			c.path = dir + "/src/config/"
 		}
 		c.read()
-	})
+	}
+	once.Do(i)
 	return c
 }
 func (c *config) check() {
