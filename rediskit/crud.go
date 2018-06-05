@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-//检查是否存在
+// 检查是否存在
 func (r *redisKit) IsExists(key string) bool {
 	result, err := r.DB.Exists(key).Result()
 	if err != nil {
@@ -15,9 +15,23 @@ func (r *redisKit) IsExists(key string) bool {
 	return result > 0
 }
 
-/*
-获取字符串
-*/
+// 获取字符串，没有的话先用dataLoader加载数据
+func (r *redisKit) GetStringWithDataLoader(key string, dataLoader func() (string, error), duration time.Duration) (string, error) {
+
+	if r.IsExists(key) {
+		return r.GetString(key)
+	} else {
+
+		ret, err := dataLoader()
+		if err != nil {
+			return "", err
+		}
+		r.Set(key, ret, duration)
+		return ret, err
+	}
+}
+
+// 获取字符串
 func (r *redisKit) GetString(key string) (string, error) {
 	b, err := r.DB.Get(key).Result()
 	if err != nil {
